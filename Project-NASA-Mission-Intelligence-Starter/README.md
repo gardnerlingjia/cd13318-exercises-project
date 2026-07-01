@@ -35,10 +35,9 @@ By completing this project, students will learn to:
 
 ### Installation
 
-1. **Navigate to the project folder**:
-   ```bash
-   cd Project-NASA-Mission-Intelligence-Starter
-   ```
+1. **Open the project folder.** The Udacity workspace opens here automatically.
+   *(If you cloned the GitHub repo instead, `cd Project-NASA-Mission-Intelligence-Starter` first.)*
+
 
 2. **Install dependencies**:
    ```bash
