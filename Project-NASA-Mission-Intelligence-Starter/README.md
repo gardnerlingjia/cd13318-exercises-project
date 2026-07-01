@@ -37,7 +37,7 @@ By completing this project, students will learn to:
 
 1. **Navigate to the project folder**:
    ```bash
-   cd project
+   cd Project-NASA-Mission-Intelligence-Starter
    ```
 
 2. **Install dependencies**:
@@ -157,7 +157,7 @@ Each file contains strategically placed TODO comments that guide you through:
 ### **Expected Data Structure**
 The system expects NASA document data organized in folders:
 ```
-data/
+data_text/
 ├── apollo11/           # Apollo 11 mission documents
 │   ├── *.txt          # Text files with mission data
 ├── apollo13/           # Apollo 13 mission documents
@@ -208,7 +208,7 @@ data/
 1. **Run the complete pipeline**:
    ```bash
    # Process documents
-   python embedding_pipeline.py --openai-key YOUR_KEY --data-path ./data
+   python embedding_pipeline.py --openai-key YOUR_KEY --data-path ./data_text
    
    # Launch chat interface
    streamlit run chat.py
@@ -314,7 +314,6 @@ If you encounter issues:
 3. Test components individually
 4. Verify API keys and dependencies
 5. Check data format and structure
-6. Review the completed implementation in `project_completed/` folder
 
 ## 📝 Submission Guidelines
 
