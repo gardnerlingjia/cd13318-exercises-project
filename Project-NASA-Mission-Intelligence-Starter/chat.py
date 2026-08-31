@@ -47,11 +47,23 @@ def initialize_rag_system(chroma_dir: str, collection_name: str):
     except Exception as e:
         return None, False, str(e)
 
-def retrieve_documents(collection, query: str, n_results: int = 3, 
-                      mission_filter: Optional[str] = None) -> Optional[Dict]:
-    """Retrieve relevant documents from ChromaDB with optional filtering"""
+def retrieve_documents(
+    collection,
+    query: str,
+    n_results: int = 3,
+    mission_filter: Optional[str] = None,
+    openai_key: Optional[str] = None,
+) -> Optional[Dict]:
+    """Retrieve relevant documents from ChromaDB with optional filtering."""
+
     try:
-        return rag_client.retrieve_documents(collection, query, n_results, mission_filter)
+        return rag_client.retrieve_documents(
+            collection=collection,
+            query=query,
+            n_results=n_results,
+            mission_filter=mission_filter,
+            openai_key=openai_key,
+        )
     except Exception as e:
         st.error(f"Error retrieving documents: {e}")
         return None
@@ -156,18 +168,33 @@ def main():
             st.warning("Please enter your OpenAI API key")
             st.stop()
         else:
-            os.environ["CHROMA_OPENAI_API_KEY"] = openai_key
+            os.environ["OPENAI_API_KEY"] = openai_key
         
         # Model selection
         model_choice = st.selectbox(
             "OpenAI Model",
-            options=["gpt-3.5-turbo", "gpt-4", "gpt-4-turbo-preview"],
+            options=["gpt-3.5-turbo"],
             help="Choose the OpenAI model for responses"
         )
         
         # Retrieval settings
         st.subheader("🔍 Retrieval Settings")
         n_docs = st.slider("Documents to retrieve", 1, 10, 3)
+
+        mission_choice = st.selectbox(
+            "Mission filter",
+            options=["All", "Apollo 11", "Apollo 13", "Challenger"],
+            help="Restrict retrieval to one NASA mission."
+        )
+
+        mission_map = {
+            "All": None,
+            "Apollo 11": "apollo_11",
+            "Apollo 13": "apollo_13",
+            "Challenger": "challenger",
+        }
+
+        mission_filter = mission_map[mission_choice]
         
         # Evaluation settings
         st.subheader("📊 Evaluation Settings")
@@ -212,11 +239,13 @@ def main():
             with st.spinner("Searching documents and generating response..."):
                 # Retrieve relevant documents
                 docs_result = retrieve_documents(
-                    collection, 
-                    prompt, 
-                    n_docs
+                    collection=collection,
+                    query=prompt,
+                    n_results=n_docs,
+                    mission_filter=mission_filter,
+                    openai_key=openai_key,
                 )
-                
+                                
                 # Format context
                 context = ""
                 contexts_list = []
