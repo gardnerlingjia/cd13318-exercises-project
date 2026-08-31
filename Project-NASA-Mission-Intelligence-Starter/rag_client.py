@@ -1,6 +1,9 @@
 import chromadb
+import os
+from openai import OpenAI
 from typing import Dict, List, Optional
 from pathlib import Path
+
 
 
 def discover_chroma_backends() -> Dict[str, Dict[str, str]]:
@@ -53,6 +56,36 @@ def initialize_rag_system(chroma_dir: str, collection_name: str):
         return collection, True, None
     except Exception as e:
         return None, False, str(e)
+    
+
+def create_query_embedding(
+    query: str,
+    openai_key: Optional[str] = None,
+    embedding_model: str = "text-embedding-3-small",
+) -> List[float]:
+    """Create an embedding for the user question."""
+
+    if not query or not query.strip():
+        raise ValueError("Query cannot be empty.")
+
+    api_key = openai_key or os.getenv("OPENAI_API_KEY")
+
+    if not api_key:
+        raise ValueError("OpenAI API key is required.")
+
+    client = OpenAI(
+        api_key=api_key,
+        base_url=os.getenv("OPENAI_BASE_URL"),
+        timeout=30.0,
+        max_retries=1,
+    )
+
+    response = client.embeddings.create(
+        model=embedding_model,
+        input=query.strip(),
+    )
+
+    return response.data[0].embedding
 
 
 def retrieve_documents(
@@ -60,11 +93,20 @@ def retrieve_documents(
     query: str,
     n_results: int = 3,
     mission_filter: Optional[str] = None,
+    openai_key: Optional[str] = None,
 ) -> Optional[Dict]:
     """Retrieve relevant documents from ChromaDB with optional filtering."""
 
     if not query or not query.strip():
         raise ValueError("Query cannot be empty.")
+
+    if n_results <= 0:
+        raise ValueError("n_results must be greater than 0.")
+
+    query_embedding = create_query_embedding(
+        query=query,
+        openai_key=openai_key,
+    )
 
     where_filter = None
 
@@ -72,7 +114,7 @@ def retrieve_documents(
         where_filter = {"mission": mission_filter}
 
     results = collection.query(
-        query_texts=[query],
+        query_embeddings=[query_embedding],
         n_results=n_results,
         where=where_filter,
         include=["documents", "metadatas", "distances"],

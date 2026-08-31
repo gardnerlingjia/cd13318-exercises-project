@@ -1,0 +1,56 @@
+[
+  {
+    "category": "overview",
+    "mission": "apollo_11",
+    "question": "What was the primary objective of the Apollo 11 mission?",
+    "answer": "The primary objective of Apollo 11 was to perform a crewed lunar landing and return safely to Earth.",
+    "contexts": [
+      "Apollo 11 was the first crewed mission to land humans on the Moon. Its mission objective included performing a crewed lunar landing and safely returning the astronauts to Earth."
+    ]
+  },
+  {
+    "category": "crew",
+    "mission": "apollo_11",
+    "question": "Who were the three astronauts of Apollo 11?",
+    "answer": "Apollo 11 was crewed by Neil Armstrong, Buzz Aldrin, and Michael Collins.",
+    "contexts": [
+      "The Apollo 11 crew consisted of commander Neil Armstrong, lunar module pilot Edwin Buzz Aldrin, and command module pilot Michael Collins."
+    ]
+  },
+  {
+    "category": "emergency",
+    "mission": "apollo_13",
+    "question": "What major emergency occurred during Apollo 13?",
+    "answer": "An oxygen tank exploded during Apollo 13, damaging the spacecraft and forcing NASA to abort the planned Moon landing.",
+    "contexts": [
+      "During Apollo 13, an oxygen tank exploded in the service module. The accident caused major spacecraft systems to fail and the lunar landing was abandoned while the crew and mission control focused on returning safely to Earth."
+    ]
+  },
+  {
+    "category": "technical",
+    "mission": "apollo_13",
+    "question": "How was the Apollo 13 lunar module used after the accident?",
+    "answer": "The lunar module was used as a temporary lifeboat to provide life support and help keep the crew alive.",
+    "contexts": [
+      "After the Apollo 13 service module accident, the lunar module was used as a lifeboat. It provided essential life-support capabilities while the crew traveled back toward Earth."
+    ]
+  },
+  {
+    "category": "disaster_analysis",
+    "mission": "challenger",
+    "question": "What technical failure contributed to the Challenger disaster?",
+    "answer": "The Challenger disaster was associated with failure of an O-ring seal in a solid rocket booster joint.",
+    "contexts": [
+      "The Challenger accident investigation identified the failure of pressure seals, known as O-rings, in a joint of the right solid rocket booster as a key technical cause of the accident."
+    ]
+  },
+  {
+    "category": "timeline",
+    "mission": "challenger",
+    "question": "When did the Space Shuttle Challenger disaster occur?",
+    "answer": "The Challenger disaster occurred on January 28, 1986, shortly after launch.",
+    "contexts": [
+      "Space Shuttle Challenger was lost on January 28, 1986, shortly after launch during mission STS-51-L."
+    ]
+  }
+]
