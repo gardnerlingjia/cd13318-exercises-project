@@ -7,6 +7,8 @@ from ragas import SingleTurnSample
 from ragas.embeddings import LangchainEmbeddingsWrapper
 from ragas.llms import LangchainLLMWrapper
 from ragas.metrics import Faithfulness, ResponseRelevancy
+from ragas.metrics.collections import RougeScore
+
 from pathlib import Path
 
 def _validate_inputs(
@@ -71,11 +73,13 @@ def evaluate_response_quality(
     question: str,
     answer: str,
     contexts: List[str],
+    reference: str = None,
 ) -> Dict[str, float]:
     """
     Evaluate one RAG response using RAGAS.
 
     Returns Response Relevancy and Faithfulness scores.
+    and optionally ROUGE when a reference is provided.
     """
 
     try:
@@ -94,7 +98,9 @@ def evaluate_response_quality(
                 context.strip()
                 for context in contexts
             ],
+            reference=reference.strip() if reference else None,
         )
+
 
         response_relevancy_metric = ResponseRelevancy(
             llm=ragas_llm,
@@ -117,7 +123,7 @@ def evaluate_response_quality(
             )
         )
 
-        return {
+        results = {
             "response_relevancy": float(
                 response_relevancy
             ),
@@ -125,6 +131,16 @@ def evaluate_response_quality(
                 faithfulness
             ),
         }
+
+        if reference and reference.strip():
+            rouge_metric = RougeScore()
+            rouge_score = rouge_metric.single_turn_score(sample)
+
+            results["rouge_score"] = float(
+                rouge_score
+            )
+
+        return results
 
     except Exception as exc:
         return {
@@ -204,6 +220,7 @@ def batch_evaluate(
             question=item["question"],
             answer=item["answer"],
             contexts=item["contexts"],
+            reference=item["answer"],
         )
 
         result = {
@@ -238,9 +255,139 @@ def batch_evaluate(
             for result in valid_results
         ) / len(valid_results),
 
+        "rouge_score_mean": sum(
+            result.get("rouge_score", 0.0)
+            for result in valid_results
+        ) / len(valid_results),
+
         "evaluated_questions": len(valid_results),
         "total_questions": len(results),
     }
+
+    return {
+        "results": results,
+        "aggregate": aggregate,
+    }
+
+def batch_evaluate_end_to_end(
+    chroma_dir: str,
+    collection_name: str,
+    openai_key: str,
+    dataset_path: str = "evaluation_dataset.txt",
+    n_results: int = 3,
+) -> Dict:
+    """
+    Run end-to-end RAG evaluation:
+
+    question -> ChromaDB retrieval -> LLM answer -> RAGAS metrics
+    """
+
+    import rag_client
+    import llm_client
+
+    dataset = load_evaluation_dataset(dataset_path)
+
+    collection, connected, error = rag_client.initialize_rag_system(
+        chroma_dir=chroma_dir,
+        collection_name=collection_name,
+    )
+
+    if not connected:
+        raise RuntimeError(
+            f"Could not connect to ChromaDB: {error}"
+        )
+
+    results = []
+
+    for index, item in enumerate(dataset, start=1):
+        print(
+            f"Evaluating {index}/{len(dataset)}: "
+            f"{item['question']}"
+        )
+
+        try:
+            retrieval = rag_client.retrieve_documents(
+                collection=collection,
+                query=item["question"],
+                n_results=n_results,
+                mission_filter=item.get("mission"),
+                openai_key=openai_key,
+            )
+
+            documents = retrieval["documents"][0]
+            metadatas = retrieval["metadatas"][0]
+
+            context_string = rag_client.format_context(
+                documents=documents,
+                metadatas=metadatas,
+            )
+
+            generated_answer = llm_client.generate_response(
+                openai_key=openai_key,
+                user_message=item["question"],
+                context=context_string,
+                conversation_history=[],
+                model="gpt-3.5-turbo",
+            )
+
+            scores = evaluate_response_quality(
+                question=item["question"],
+                answer=generated_answer,
+                contexts=documents,
+                reference=item["answer"],
+            )
+
+            result = {
+                "category": item["category"],
+                "mission": item["mission"],
+                "question": item["question"],
+                "reference_answer": item["answer"],
+                "generated_answer": generated_answer,
+                **scores,
+            }
+
+        except Exception as exc:
+            result = {
+                "category": item["category"],
+                "mission": item["mission"],
+                "question": item["question"],
+                "error": str(exc),
+            }
+
+        results.append(result)
+
+    valid_results = [
+        result
+        for result in results
+        if "error" not in result
+    ]
+
+    aggregate = {}
+
+    if valid_results:
+        aggregate["response_relevancy_mean"] = sum(
+            result["response_relevancy"]
+            for result in valid_results
+        ) / len(valid_results)
+
+        aggregate["faithfulness_mean"] = sum(
+            result["faithfulness"]
+            for result in valid_results
+        ) / len(valid_results)
+
+        rouge_results = [
+            result["rouge_score"]
+            for result in valid_results
+            if "rouge_score" in result
+        ]
+
+        if rouge_results:
+            aggregate["rouge_score_mean"] = (
+                sum(rouge_results) / len(rouge_results)
+            )
+
+    aggregate["evaluated_questions"] = len(valid_results)
+    aggregate["total_questions"] = len(results)
 
     return {
         "results": results,
